@@ -1,0 +1,30 @@
+@font-face {
+  font-family: Anybody;
+  src: url('/Anybody.ttf');
+}
+
+html, body, #app {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  font-family: Anybody, 'sans-serif';
+}
+
+.root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.top, .bottom {
+  flex-grow: 1;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clock {
+  font-size: 30vh;
+}

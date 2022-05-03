@@ -1,0 +1,40 @@
+{
+  "name": "bathroom-clock",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "npm run client-build && npm run server",
+    "dev": "concurrently --kill-others \"npm run dev-server\" \"npm run dev-client-build\"",
+    "server": "ts-node -T server/index.ts",
+    "client-build": "esbuild client/index.jsx --bundle --outfile=static/bundle.js",
+    "dev-server": "nodemon -T server/index.ts",
+    "dev-client-build": "npm run client-build -- --watch",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/benkaiser/bathroom-clock.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/benkaiser/bathroom-clock/issues"
+  },
+  "homepage": "https://github.com/benkaiser/bathroom-clock#readme",
+  "dependencies": {
+    "concurrently": "^7.1.0",
+    "dayjs": "^1.10.6",
+    "esbuild": "^0.14.38",
+    "express": "^4.18.1",
+    "nodemon": "^2.0.16",
+    "react": "^18.1.0",
+    "react-dom": "^18.1.0",
+    "ts-node": "^10.7.0",
+    "typescript": "^4.6.4",
+    "xml-js": "^1.6.11"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.8"
+  }
+}
