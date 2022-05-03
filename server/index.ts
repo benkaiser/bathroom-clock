@@ -11,10 +11,11 @@ app.get('/', (req, res) => {
 });
 
 app.get('/weather', (req, res) => {
+  // IDQ10610 represents the Gold Coast area code
   fetch('http://www.bom.gov.au/fwo/IDQ10610.xml')
   .then(response => response.text())
   .then(responseJson => {
-    res.send(xml2json(responseJson, { compact: true, spaces: 4 }));
+    res.send(xml2json(responseJson, { compact: true }));
   });
 });
 
