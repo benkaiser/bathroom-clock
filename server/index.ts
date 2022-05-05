@@ -6,11 +6,11 @@ const port = process.env.PORT || 5222;
 
 app.use(express.static('static'));
 
-app.get('/', (req, res) => {
+app.get('/', (_, res) => {
   res.sendFile('./static/index.html');
 });
 
-app.get('/weather', (req, res) => {
+app.get('/weather', (_, res) => {
   // IDQ10610 represents the Gold Coast area code
   fetch('http://www.bom.gov.au/fwo/IDQ10610.xml')
   .then(response => response.text())
