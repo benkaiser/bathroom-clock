@@ -2,6 +2,9 @@ import express from 'express';
 import { xml2json } from 'xml-js';
 import IcalExpander from 'ical-expander';
 import dotenv from 'dotenv';
+import rpio from 'rpio';
+import { exec } from 'child_process';
+
 dotenv.config();
 console.log(process.env.ICAL_URL_1);
 const icalUrls = [];
@@ -61,3 +64,52 @@ app.get('/events', (_, res) => {
 app.listen(port, () => {
   console.log(`App running on port ${port}`)
 });
+
+// listen for motion sensor changes
+const MOTION_PIN = process.env.PIN || 8; // maps to GPIO 14 (pin 8) on the Raspberry Pi
+const TURN_OFF_DELAY = 1000 * 60 * 30; // 30 minutes of no motion turns off screen
+try {
+  rpio.open(MOTION_PIN, rpio.INPUT);
+  let monitorState: boolean = false;
+  function turnOffMonitor() {
+    if (monitorState) {
+      console.log('Turning monitor off');
+      exec(`${__dirname}/monitor_off.sh`, (error, stdout, stderr) => {
+        console.log(stdout);
+        console.error(stderr);
+      });
+      monitorState = false;
+    } 
+  }
+  function turnOnMonitor() {
+    if (!monitorState) {
+      console.log('Turning monitor on');
+      exec(`${__dirname}/monitor_on.sh`, (error, stdout, stderr) => {
+        console.log(stdout);
+        console.error(stderr);
+      });
+      monitorState = true;
+    } 
+  }
+
+  let offTimeout = setTimeout(turnOffMonitor, TURN_OFF_DELAY);
+  function onMotion() {
+    turnOnMonitor();
+    clearTimeout(offTimeout);
+    offTimeout = setTimeout(turnOffMonitor, TURN_OFF_DELAY);
+  }
+  // default polling method pings every 1ms, to reduce load, make this once every second
+  // rpio.poll(MOTION_PIN, onMotion, rpio.POLL_HIGH);
+  let lastMotion: boolean = false;
+  setInterval(() => {
+    const motion = rpio.read(MOTION_PIN);
+    // uncomment to see raw pin values
+    // console.log('Read value: ' + motion);
+    if (motion !== lastMotion && motion) {
+      onMotion();
+    }
+    lastMotion = motion;
+  }, 1000);
+} catch (e) {
+  console.error(e);
+}
