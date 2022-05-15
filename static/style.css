@@ -55,6 +55,7 @@ html, body, #app {
   gap: 10px;
   border: 1px solid var(--foreground);
   border-radius: 3px;
+  width: 80px;
 }
 
 .temps {
