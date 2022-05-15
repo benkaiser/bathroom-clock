@@ -27,6 +27,10 @@ app.get('/weather', (_, res) => {
   .then(response => response.text())
   .then(responseJson => {
     res.send(xml2json(responseJson, { compact: true }));
+  })
+  .catch(error => {
+    console.error(error);
+    res.status(500).send('Fetch failed');
   });
 });
 
@@ -58,6 +62,10 @@ app.get('/events', (_, res) => {
       finalEvents = finalEvents.concat(allEvents);
     });
     res.send(finalEvents.sort((a, b) => +new Date(a.startDate) - +new Date(b.startDate)));
+  })
+  .catch(error => {
+    console.error(error);
+    res.status(500).send('Fetch failed');
   });
 });
 
