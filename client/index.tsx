@@ -16,5 +16,15 @@ class App extends React.Component {
   }
 }
 
+setInterval(() => {
+  fetch('/needsrestart')
+  .then(response => response.text())
+  .then(text => {
+    if (text === 'yes') {
+      window.location.reload();
+    }
+  })
+}, 60000);
+
 const root = createRoot(document.getElementById('app'));
 root.render(<App />);

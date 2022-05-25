@@ -3,6 +3,7 @@ import { xml2json } from 'xml-js';
 import IcalExpander from 'ical-expander';
 import dotenv from 'dotenv';
 import rpio from 'rpio';
+import path from 'path';
 import { exec } from 'child_process';
 
 dotenv.config();
@@ -15,10 +16,17 @@ for (let x = 1; process.env['ICAL_URL_' + x]; x++) {
 const app = express()
 const port = process.env.PORT || 5222;
 
+let needsRestart = true;
+app.get('/', (_, res) => {
+  console.log(needsRestart);
+  needsRestart = false;
+  res.sendFile(path.resolve('static/index.html'));
+});
 app.use(express.static('static'));
 
-app.get('/', (_, res) => {
-  res.sendFile('./static/index.html');
+app.get('/needsrestart', (_, res) => {
+  console.log(needsRestart);
+  res.send(needsRestart ? 'yes' : 'no');
 });
 
 app.get('/weather', (_, res) => {
@@ -97,11 +105,12 @@ try {
         console.error(stderr);
       });
       monitorState = true;
-    } 
+    }
   }
 
   let offTimeout = setTimeout(turnOffMonitor, TURN_OFF_DELAY);
   function onMotion() {
+    console.log('Resetting timeout');
     turnOnMonitor();
     clearTimeout(offTimeout);
     offTimeout = setTimeout(turnOffMonitor, TURN_OFF_DELAY);
