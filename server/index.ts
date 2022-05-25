@@ -83,7 +83,8 @@ app.listen(port, () => {
 
 // listen for motion sensor changes
 const MOTION_PIN = process.env.PIN || 8; // maps to GPIO 14 (pin 8) on the Raspberry Pi
-const TURN_OFF_DELAY = 1000 * 60 * 30; // 30 minutes of no motion turns off screen
+const TURN_OFF_DELAY_MORNING = 1000 * 60 * 30; // 30 minutes of no motion turns off screen
+const TURN_OFF_DELAY_OTHER = 1000 * 60; // 1 minute of no motion turns off screen
 try {
   rpio.open(MOTION_PIN, rpio.INPUT);
   let monitorState: boolean = false;
@@ -107,13 +108,23 @@ try {
       monitorState = true;
     }
   }
+  turnOnMonitor();
 
-  let offTimeout = setTimeout(turnOffMonitor, TURN_OFF_DELAY);
+  function offDelay() {
+    const hour = new Date().getHours();
+    if (hour > 5  && hour < 12) {
+	    return TURN_OFF_DELAY_MORNING;
+    } else {
+	    return TURN_OFF_DELAY_OTHER;
+    }
+  }
+
+  let offTimeout = setTimeout(turnOffMonitor, offDelay());
   function onMotion() {
     console.log('Resetting timeout');
     turnOnMonitor();
     clearTimeout(offTimeout);
-    offTimeout = setTimeout(turnOffMonitor, TURN_OFF_DELAY);
+    offTimeout = setTimeout(turnOffMonitor, offDelay());
   }
   // default polling method pings every 1ms, to reduce load, make this once every second
   // rpio.poll(MOTION_PIN, onMotion, rpio.POLL_HIGH);
