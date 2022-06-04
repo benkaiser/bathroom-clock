@@ -42,6 +42,10 @@ html, body, #app {
   font-size: 30vh;
 }
 
+.weather {
+  font-size: 20px;
+}
+
 .tiles {
   display: flex;
   flex-direction: row;
@@ -55,7 +59,7 @@ html, body, #app {
   gap: 10px;
   border: 1px solid var(--foreground);
   border-radius: 3px;
-  width: 80px;
+  width: 100px;
 }
 
 .temps {
@@ -74,7 +78,7 @@ html, body, #app {
 
 .events {
   text-align: left;
-  font-size: 18px;
+  font-size: 24px;
   width: 600px;
 }
 
@@ -89,6 +93,7 @@ html, body, #app {
 }
 
 .eventTile {
+  font-size: 24px;
   max-width: 600px;
   white-space: nowrap;
   overflow: hidden;

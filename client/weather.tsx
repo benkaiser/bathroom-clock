@@ -88,9 +88,8 @@ export default class Weather extends React.Component<{}, IWeatherState> {
             return <div key={+item.day} className='tile'>
               <div className='date'>{dayName}</div>
               <i className={`wi ${bomToWeatherIconMap[item.icon]} weatherIcon`}></i>
-              <div className='description'>{item.description}</div>
               <div className='temps'><span className='minimum'>{item.minimum}</span> <span className='maximum'>{item.maximum}</span></div>
-
+              <div className='description'>{item.description}</div>
             </div>;
           })}
         </div>
