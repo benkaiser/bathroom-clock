@@ -1,8 +1,15 @@
 import dayjs from 'dayjs';
 import * as React from 'react';
 
+interface IWeather {
+  startDate: string;
+  endDate: string;
+  id: string;
+  summary: string;
+}
+
 interface IWeatherState {
-  data: IEvent[];
+  data: IWeather[];
   error?: Error;
 }
 
@@ -17,9 +24,9 @@ export default class Events extends React.Component<{}, IWeatherState> {
   }
 
   componentDidMount() {
-    this.updateWeather();
+    this.updateEvents();
     setInterval(() => {
-      this.updateWeather();
+      this.updateEvents();
     }, EVENTS_INTERVAL);
   }
 
@@ -43,12 +50,13 @@ export default class Events extends React.Component<{}, IWeatherState> {
     return <div>Events Loading...</div>
   }
 
-  updateWeather() {
+  updateEvents() {
     fetch('/events')
     .then(response => response.json())
     .then(responseJson => {
       this.setState({
-        data: responseJson
+        data: responseJson,
+        error: undefined
       });
     })
     .catch((e) => {

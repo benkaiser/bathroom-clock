@@ -118,7 +118,8 @@ export default class Weather extends React.Component<{}, IWeatherState> {
       });
       console.log(forcast);
       this.setState({
-        data: forcast
+        data: forcast,
+        error: undefined
       });
     })
     .catch((e) => {

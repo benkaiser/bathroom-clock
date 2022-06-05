@@ -18,14 +18,12 @@ const port = process.env.PORT || 5222;
 
 let needsRestart = true;
 app.get('/', (_, res) => {
-  console.log(needsRestart);
   needsRestart = false;
   res.sendFile(path.resolve('static/index.html'));
 });
 app.use(express.static('static'));
 
 app.get('/needsrestart', (_, res) => {
-  console.log(needsRestart);
   res.send(needsRestart ? 'yes' : 'no');
 });
 
@@ -96,7 +94,7 @@ try {
         console.error(stderr);
       });
       monitorState = false;
-    } 
+    }
   }
   function turnOnMonitor() {
     if (!monitorState) {
