@@ -1,13 +1,14 @@
 import * as React from 'react'
 import { createRoot } from 'react-dom/client';
 import Clock from './clock';
+import DailyMessage from './daily_message';
 import Events from './events';
 import Weather from './weather';
 
 class App extends React.Component {
   render() {
     return <div className="root">
-      <div className="top"><Clock /></div>
+      <div className="top"><Clock /><DailyMessage /></div>
       <div className="bottom">
         <div className='weather'><Weather /></div>
         <div className='events'><Events /></div>

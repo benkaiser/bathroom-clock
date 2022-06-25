@@ -30,6 +30,7 @@ html, body, #app {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-direction: column;
 }
 
 .bottom {
@@ -40,6 +41,11 @@ html, body, #app {
 
 .clock {
   font-size: 30vh;
+}
+
+.message {
+  padding-top: 5vh;
+  font-size: 3vh;
 }
 
 .weather {
