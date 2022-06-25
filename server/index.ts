@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import rpio from 'rpio';
 import path from 'path';
 import { exec } from 'child_process';
+const nocache = require("nocache");
 
 dotenv.config();
 console.log(process.env.ICAL_URL_1);
@@ -16,6 +17,7 @@ for (let x = 1; process.env['ICAL_URL_' + x]; x++) {
 const app = express()
 const port = process.env.PORT || 5222;
 
+app.use(nocache());
 let needsRestart = true;
 app.get('/', (_, res) => {
   needsRestart = false;
