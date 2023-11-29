@@ -14,6 +14,7 @@ interface IWeatherState {
 }
 
 const EVENTS_INTERVAL = 1000 * 60 * 60; // hourly
+const ERROR_RETRY_INTERVAL = 1000 * 60; // 1 minute
 
 export default class Events extends React.Component<{}, IWeatherState> {
   constructor(props: {}) {
@@ -32,7 +33,7 @@ export default class Events extends React.Component<{}, IWeatherState> {
 
   render() {
     if (this.state.error) {
-      return <div>Failed to fetch events</div>
+      return <div>Failed to fetch events, trying again shortly</div>
     }
     if (this.state.data) {
       return <div>
@@ -62,7 +63,10 @@ export default class Events extends React.Component<{}, IWeatherState> {
     .catch((e) => {
       this.setState({
         error: e
-      })
+      });
+      setTimeout(() => {
+        this.updateEvents();
+      }, ERROR_RETRY_INTERVAL);
     });
   }
 }
