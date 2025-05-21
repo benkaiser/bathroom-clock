@@ -6,6 +6,7 @@ import rpio from 'rpio';
 import path from 'path';
 import { exec } from 'child_process';
 const nocache = require("nocache");
+import { Agent } from 'undici';
 
 dotenv.config();
 console.log(process.env.ICAL_URL_1);
@@ -31,7 +32,7 @@ app.get('/needsrestart', (_, res) => {
 
 app.get('/weather', (_, res) => {
   // IDQ10610 represents the Gold Coast area code
-  fetch('http://www.bom.gov.au/fwo/IDQ10610.xml')
+  fetch('http://www.bom.gov.au/fwo/IDQ10610.xml', { dispatcher: new Agent({ connectTimeout: 600000 })})
   .then(response => response.text())
   .then(responseJson => {
     res.send(xml2json(responseJson, { compact: true }));
@@ -44,7 +45,7 @@ app.get('/weather', (_, res) => {
 
 app.get('/events', (_, res) => {
   Promise.all(
-    icalUrls.map(url => fetch(url).then(response => response.text()))
+    icalUrls.map(url => fetch(url, { dispatcher: new Agent({ connectTimeout: 600000 })}).then(response => response.text()))
   ).then(responses => {
     let finalEvents = [];
     responses.forEach(response => {
