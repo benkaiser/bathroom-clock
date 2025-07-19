@@ -58,27 +58,32 @@ app.get('/events', (_, res) => {
       }
     ).then(response => response.text()))
   ).then(responses => {
-    let finalEvents = [];
+    let finalEvents: any[] = [];
     responses.forEach(response => {
       const icalExpander = new IcalExpander({ ics: response, maxIterations: 100 });
       const oneHourAgo = new Date(new Date().getTime() - (1000*60*60));
       const tomorrow = new Date(new Date().getTime() + (1000*60*60*24));
       const events = icalExpander.between(oneHourAgo, tomorrow);
-      const mappedEvents = events.events.map(e => ({
-        id: e.uid,
-        startDate: e.startDate.toJSDate(),
-        endDate: e.endDate.toJSDate(),
-        duration: e.duration?.toSeconds(),
-        summary: e.summary
-      }));
-      const mappedOccurrences = events.occurrences.map(o => ({
-        id: o.uid,
-        startDate: o.startDate.toJSDate(),
-        endDate: o.endDate.toJSDate(),
-        duration: o.duration?.toSeconds(),
-        summary: o.item.summary
-      }));
-      const allEvents = [].concat(mappedEvents, mappedOccurrences);
+      const mappedEvents = events.events
+        .map(e => ({
+          id: e.uid,
+          startDate: e.startDate.toJSDate(),
+          endDate: e.endDate.toJSDate(),
+          duration: e.duration?.toSeconds(),
+          location: e.location,
+          summary: e.summary
+        }));
+      const mappedOccurrences = events.occurrences
+        .map(o => ({
+          id: o.uid,
+          startDate: o.startDate.toJSDate(),
+          endDate: o.endDate.toJSDate(),
+          duration: o.duration?.toSeconds(),
+          location: o.item.location,
+          summary: o.item.summary
+        }));
+      const defaultFilter = (e: any) => e.location !== '[routine]' && !e.summary.includes('OOF');
+      const allEvents = [].concat(mappedEvents, mappedOccurrences).filter(defaultFilter);
       finalEvents = finalEvents.concat(allEvents);
     });
     res.send(finalEvents.sort((a, b) => +new Date(a.startDate) - +new Date(b.startDate)));
