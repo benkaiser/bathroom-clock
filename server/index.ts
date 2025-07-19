@@ -43,9 +43,20 @@ app.get('/weather', (_, res) => {
   });
 });
 
+const EDGE_USER_AGENT =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0';
+
 app.get('/events', (_, res) => {
   Promise.all(
-    icalUrls.map(url => fetch(url, { dispatcher: new Agent({ connectTimeout: 600000 })}).then(response => response.text()))
+    icalUrls.map(url => fetch(
+      url,
+      {
+        dispatcher: new Agent({ connectTimeout: 600000 }),
+        headers: {
+	  'User-Agent': EDGE_USER_AGENT
+	}
+      }
+    ).then(response => response.text()))
   ).then(responses => {
     let finalEvents = [];
     responses.forEach(response => {
