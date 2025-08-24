@@ -46,26 +46,48 @@ app.get('/weather', (_, res) => {
 const EDGE_USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0';
 
-app.get('/events', (_, res) => {
-  Promise.all(
-    icalUrls.map(url => fetch(
-      url,
-      {
+app.get('/events', async (_, res) => {
+  const oneHourAgo = new Date(Date.now() - (1000 * 60 * 60));
+  const tomorrow = new Date(Date.now() + (1000 * 60 * 60 * 24));
+  try {
+    type FetchResultOk = { ok: true; text: string; idx: number; url: string };
+    type FetchResultErr = { ok: false; error: any; idx: number; url: string };
+    type FetchResult = FetchResultOk | FetchResultErr;
+
+    const fetchPromises: Promise<FetchResult>[] = icalUrls.map((url, idx) =>
+      fetch(url, {
         dispatcher: new Agent({ connectTimeout: 600000 }),
-        headers: {
-	  'User-Agent': EDGE_USER_AGENT
-	}
-      }
-    ).then(response => response.text()))
-  ).then(responses => {
+        headers: { 'User-Agent': EDGE_USER_AGENT }
+      } as any)
+        .then(response => response.text())
+        .then(text => ({ ok: true as const, text, idx, url }))
+        .catch(error => ({ ok: false as const, error, idx, url }))
+    );
+
+    const results: FetchResult[] = await Promise.all(fetchPromises);
+
     let finalEvents: any[] = [];
-    responses.forEach(response => {
-      const icalExpander = new IcalExpander({ ics: response, maxIterations: 100 });
-      const oneHourAgo = new Date(new Date().getTime() - (1000*60*60));
-      const tomorrow = new Date(new Date().getTime() + (1000*60*60*24));
-      const events = icalExpander.between(oneHourAgo, tomorrow);
-      const mappedEvents = events.events
-        .map(e => ({
+
+    results.forEach(result => {
+      if (!result.ok) {
+        // Record a simple failure event for this ICAL_URL_X so the UI can show a "Failed ICAL_URL_X" line
+        console.error(`Failed to fetch ${result.url}:`, result.error);
+        finalEvents.push({
+          id: `failed-${result.idx}`,
+          startDate: oneHourAgo,
+          endDate: oneHourAgo,
+          duration: 0,
+          location: undefined,
+          summary: `Failed ICAL_URL_${result.idx + 1}`
+        });
+        return;
+      }
+
+      // Try parsing the calendar - if parsing fails for this calendar, record a failure and continue
+      try {
+        const icalExpander = new IcalExpander({ ics: result.text, maxIterations: 100 });
+        const events = icalExpander.between(oneHourAgo, tomorrow);
+        const mappedEvents = events.events.map((e: any) => ({
           id: e.uid,
           startDate: e.startDate.toJSDate(),
           endDate: e.endDate.toJSDate(),
@@ -73,8 +95,7 @@ app.get('/events', (_, res) => {
           location: e.location,
           summary: e.summary
         }));
-      const mappedOccurrences = events.occurrences
-        .map(o => ({
+        const mappedOccurrences = events.occurrences.map((o: any) => ({
           id: o.uid,
           startDate: o.startDate.toJSDate(),
           endDate: o.endDate.toJSDate(),
@@ -82,16 +103,28 @@ app.get('/events', (_, res) => {
           location: o.item.location,
           summary: o.item.summary
         }));
-      const defaultFilter = (e: any) => e.location !== '[routine]' && !e.summary.includes('OOF');
-      const allEvents = [].concat(mappedEvents, mappedOccurrences).filter(defaultFilter);
-      finalEvents = finalEvents.concat(allEvents);
+        const defaultFilter = (e: any) => e.location !== '[routine]' && !e.summary.includes('OOF');
+        const allEvents = [].concat(mappedEvents, mappedOccurrences).filter(defaultFilter);
+        finalEvents = finalEvents.concat(allEvents);
+      } catch (e) {
+        console.error(`Failed to parse iCal for ${result.url}:`, e);
+        finalEvents.push({
+          id: `failed-${result.idx}`,
+          startDate: oneHourAgo,
+          endDate: oneHourAgo,
+          duration: 0,
+          location: undefined,
+          summary: `Failed ICAL_URL_${result.idx + 1}`
+        });
+      }
     });
+
+    // Sort events by startDate and return
     res.send(finalEvents.sort((a, b) => +new Date(a.startDate) - +new Date(b.startDate)));
-  })
-  .catch(error => {
+  } catch (error) {
     console.error(error);
     res.status(500).send('Fetch failed');
-  });
+  }
 });
 
 app.listen(port, () => {
