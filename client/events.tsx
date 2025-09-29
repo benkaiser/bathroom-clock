@@ -41,7 +41,7 @@ export default class Events extends React.Component<{}, IWeatherState> {
           {this.state.data.map(item => {
             const start = new Date(item.startDate);
             const end = new Date(item.endDate);
-            return <div key={+item.id} className='eventTile'>
+            return <div key={+item.id + item.startDate + item.summary} className='eventTile'>
               <span className='eventTime'>{dayjs(start).format('HH:mm')}</span><span className='description'>{item.summary}</span>
             </div>;
           })}
