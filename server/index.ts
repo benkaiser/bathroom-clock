@@ -2,7 +2,6 @@ import express from 'express';
 import { xml2json } from 'xml-js';
 import IcalExpander from 'ical-expander';
 import dotenv from 'dotenv';
-import rpio from 'rpio';
 import path from 'path';
 import { exec } from 'child_process';
 const nocache = require("nocache");
@@ -135,8 +134,30 @@ app.listen(port, () => {
 const MOTION_PIN = process.env.PIN || 8; // maps to GPIO 14 (pin 8) on the Raspberry Pi
 const TURN_OFF_DELAY_MORNING = 1000 * 60 * 30; // 30 minutes of no motion turns off screen
 const TURN_OFF_DELAY_OTHER = 1000 * 60; // 1 minute of no motion turns off screen
+
+let useRaspberryPi = true;
+let rpio: any = null;
+let orangePiGpio: any = null;
+
+// Try to load Raspberry Pi GPIO first
 try {
+  rpio = require('rpio');
   rpio.open(MOTION_PIN, rpio.INPUT);
+  console.log('Using Raspberry Pi GPIO');
+} catch (e) {
+  console.log('Raspberry Pi GPIO failed, trying Orange Pi GPIO');
+  useRaspberryPi = false;
+  try {
+    const OrangePiGpio = require("orange-pi-gpio");
+    orangePiGpio = new OrangePiGpio({pin: MOTION_PIN, mode: 'in'});
+    console.log('Using Orange Pi GPIO');
+  } catch (err) {
+    console.error('Both GPIO libraries failed:', err);
+    throw err;
+  }
+}
+
+try {
   let monitorState: boolean = false;
   function turnOffMonitor() {
     if (monitorState) {
@@ -176,18 +197,36 @@ try {
     clearTimeout(offTimeout);
     offTimeout = setTimeout(turnOffMonitor, offDelay());
   }
-  // default polling method pings every 1ms, to reduce load, make this once every second
-  // rpio.poll(MOTION_PIN, onMotion, rpio.POLL_HIGH);
+
   let lastMotion: boolean = false;
-  setInterval(() => {
-    const motion = rpio.read(MOTION_PIN);
-    // uncomment to see raw pin values
-    // console.log('Read value: ' + motion);
-    if (motion !== lastMotion && motion) {
-      onMotion();
-    }
-    lastMotion = motion;
-  }, 1000);
+
+  if (useRaspberryPi) {
+    // Raspberry Pi GPIO (synchronous)
+    setInterval(() => {
+      const motion = rpio.read(MOTION_PIN);
+      // uncomment to see raw pin values
+      // console.log('Read value: ' + motion);
+      if (motion !== lastMotion && motion) {
+        onMotion();
+      }
+      lastMotion = motion;
+    }, 1000);
+  } else {
+    // Orange Pi GPIO (asynchronous)
+    setInterval(async () => {
+      try {
+        const motion = await orangePiGpio.read();
+        // uncomment to see raw pin values
+        // console.log('Read value: ' + motion);
+        if (motion !== lastMotion && motion) {
+          onMotion();
+        }
+        lastMotion = motion;
+      } catch (error) {
+        console.error('Error reading Orange Pi GPIO pin:', error);
+      }
+    }, 1000);
+  }
 } catch (e) {
   console.error(e);
 }
