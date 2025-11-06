@@ -118,8 +118,20 @@ app.get('/events', async (_, res) => {
       }
     });
 
+    /// De-duplicate events
+    const eventMap = new Map();
+    finalEvents.forEach(event => {
+      // Use a combination of id (UID) and start date for a unique key
+      const uniqueKey = `${event.id}_${event.startDate.getTime()}`;
+      // Only add the event if it's not already logged, or if it's the "Failed" marker (which has a unique synthetic ID `failed-{idx}`)
+      if (!['failed-0', 'failed-1', 'failed-2', 'failed-3'].includes(event.id) && eventMap.has(uniqueKey)) {
+        return;
+      }
+      eventMap.set(uniqueKey, event);
+    });
+
     // Sort events by startDate and return
-    res.send(finalEvents.sort((a, b) => +new Date(a.startDate) - +new Date(b.startDate)));
+    res.send(Array.from(eventMap.values()).sort((a, b) => +new Date(a.startDate) - +new Date(b.startDate)));
   } catch (error) {
     console.error(error);
     res.status(500).send('Fetch failed');

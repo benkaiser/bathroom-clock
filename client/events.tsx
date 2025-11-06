@@ -9,7 +9,8 @@ interface IWeather {
 }
 
 interface IWeatherState {
-  data: IWeather[];
+  data?: IWeather[];
+  responseKey?: number;
   error?: Error;
 }
 
@@ -20,7 +21,8 @@ export default class Events extends React.Component<{}, IWeatherState> {
   constructor(props: {}) {
     super(props);
     this.state = {
-      data: null
+      data: undefined,
+      responseKey: undefined
     }
   }
 
@@ -37,11 +39,11 @@ export default class Events extends React.Component<{}, IWeatherState> {
     }
     if (this.state.data) {
       return <div>
-        <div className='eventTiles'>
+        <div className='eventTiles' key={this.state.responseKey}>
           {this.state.data.map(item => {
             const start = new Date(item.startDate);
             const end = new Date(item.endDate);
-            return <div key={+item.id + item.startDate + item.summary} className='eventTile'>
+            return <div key={+item.id} className='eventTile'>
               <span className='eventTime'>{dayjs(start).format('HH:mm')}</span><span className='description'>{item.summary}</span>
             </div>;
           })}
@@ -57,6 +59,7 @@ export default class Events extends React.Component<{}, IWeatherState> {
     .then(responseJson => {
       this.setState({
         data: responseJson,
+        responseKey: +new Date(),
         error: undefined
       });
     })
