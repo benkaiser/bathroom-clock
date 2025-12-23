@@ -3,7 +3,7 @@ import { xml2json } from 'xml-js';
 import IcalExpander from 'ical-expander';
 import dotenv from 'dotenv';
 import path from 'path';
-import { exec } from 'child_process';
+import { exec, execSync } from 'child_process';
 const nocache = require("nocache");
 import { Agent } from 'undici';
 
@@ -148,23 +148,34 @@ const TURN_OFF_DELAY_MORNING = 1000 * 60 * 30; // 30 minutes of no motion turns 
 const TURN_OFF_DELAY_OTHER = 1000 * 60; // 1 minute of no motion turns off screen
 
 let useRaspberryPi = true;
+try {
+  const compatible = execSync('cat /proc/device-tree/compatible').toString();
+  if (compatible.includes('orangepi')) {
+    useRaspberryPi = false;
+  }
+} catch (e) {
+  console.log('Failed to check /proc/device-tree/compatible, defaulting to Raspberry Pi');
+}
+
 let rpio: any = null;
 let orangePiGpio: any = null;
 
-// Try to load Raspberry Pi GPIO first
-try {
-  rpio = require('rpio');
-  rpio.open(MOTION_PIN, rpio.INPUT);
-  console.log('Using Raspberry Pi GPIO');
-} catch (e) {
-  console.log('Raspberry Pi GPIO failed, trying Orange Pi GPIO');
-  useRaspberryPi = false;
+if (useRaspberryPi) {
+  try {
+    rpio = require('rpio');
+    rpio.open(MOTION_PIN, rpio.INPUT);
+    console.log('Using Raspberry Pi GPIO');
+  } catch (e) {
+    console.error('Raspberry Pi GPIO library failed:', e);
+    throw e;
+  }
+} else {
   try {
     const OrangePiGpio = require("orange-pi-gpio");
     orangePiGpio = new OrangePiGpio({pin: MOTION_PIN, mode: 'in'});
     console.log('Using Orange Pi GPIO');
   } catch (err) {
-    console.error('Both GPIO libraries failed:', err);
+    console.error('Orange Pi GPIO library failed:', err);
     throw err;
   }
 }
