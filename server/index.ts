@@ -172,7 +172,7 @@ if (useRaspberryPi) {
 } else {
   try {
     const OrangePiGpio = require("orange-pi-gpio");
-    orangePiGpio = new OrangePiGpio({pin: MOTION_PIN, mode: 'in'});
+    orangePiGpio = new OrangePiGpio({pin: 6, mode: 'in'});
     console.log('Using Orange Pi GPIO');
   } catch (err) {
     console.error('Orange Pi GPIO library failed:', err);
