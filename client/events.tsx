@@ -89,19 +89,39 @@ function layoutEvents(events: IEvent[]): { blocks: LayoutBlock[], totalHeight: n
       }
       depth = 0;
     } else {
-      // Overlapping — find the parent (first/lowest overlapping block)
+      // Overlapping — find the parent (earliest/topmost overlapping block)
       const parentBlock = overlapping.reduce((a, b) => a.top < b.top ? a : b);
-      // Find all blocks visually inside the parent's bounds
+
+      // Calculate proportional position within the parent based on time
+      const parentStartMs = parentBlock.startMs;
+      const parentEndMs = parentBlock.endMs;
+      const parentDuration = parentEndMs - parentStartMs;
+      const childOffset = startMs - parentStartMs;
+      const proportion = parentDuration > 0 ? childOffset / parentDuration : 0;
+
+      // Ideal position: proportional within parent's pixel bounds
+      // Leave OVERLAP_MIN_TOP at the top for the parent's own text
+      const availableHeight = parentBlock.height - OVERLAP_MIN_TOP;
+      const idealTop = parentBlock.top + OVERLAP_MIN_TOP + (proportion * Math.max(availableHeight - MIN_BLOCK_HEIGHT, 0));
+
+      top = idealTop;
+
+      // Find siblings already placed inside this parent's bounds
       const siblings = placed.filter(p =>
+        p !== parentBlock &&
         p.top >= parentBlock.top && p.top < parentBlock.top + parentBlock.height
       );
-      // Place below the lowest sibling
-      if (siblings.length > 0) {
-        const lowestSiblingTop = Math.max(...siblings.map(s => s.top));
-        top = lowestSiblingTop + OVERLAP_MIN_TOP;
-      } else {
-        top = parentBlock.top + OVERLAP_MIN_TOP;
+
+      // Ensure minimum spacing from all siblings
+      for (const sib of siblings.sort((a, b) => a.top - b.top)) {
+        if (Math.abs(top - sib.top) < OVERLAP_MIN_TOP + GAP_BETWEEN) {
+          top = Math.max(top, sib.top + OVERLAP_MIN_TOP + GAP_BETWEEN);
+        }
       }
+
+      // Ensure we're at least OVERLAP_MIN_TOP below parent top
+      top = Math.max(top, parentBlock.top + OVERLAP_MIN_TOP);
+
       depth = overlapping.length;
     }
 
