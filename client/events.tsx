@@ -20,26 +20,87 @@ const ERROR_RETRY_INTERVAL = 1000 * 60; // 1 minute
 const SCROLL_SPEED = 0.5; // pixels per frame
 const SCROLL_PAUSE_MS = 3000; // pause at top and bottom
 const ALL_DAY_SECONDS = 86400;
+const PIXELS_PER_HOUR = 40; // height scaling for timeline blocks
+const MIN_BLOCK_HEIGHT = 38; // minimum block height so text is visible
+const OVERLAP_INDENT = 12; // px indent for each overlap layer
+const OVERLAP_MIN_TOP = 36; // minimum px offset for overlapping events so text doesn't merge
+const GAP_BETWEEN = 6; // px gap between non-overlapping events
+
+// Muted colors for event blocks
+const BLOCK_COLORS = [
+  'rgba(100, 160, 220, 0.25)',
+  'rgba(160, 120, 200, 0.25)',
+  'rgba(120, 190, 160, 0.25)',
+  'rgba(200, 160, 100, 0.25)',
+  'rgba(180, 120, 140, 0.25)',
+  'rgba(100, 180, 200, 0.25)',
+];
 
 function isAllDay(event: IEvent): boolean {
   if (event.duration === ALL_DAY_SECONDS) return true;
-  // Also detect events with no duration but spanning 24h+
   const start = new Date(event.startDate);
   const end = new Date(event.endDate);
   const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
   return hours >= 23;
 }
 
-function formatTimeRange(event: IEvent): string {
-  const start = dayjs(event.startDate);
-  const end = dayjs(event.endDate);
-  const durationMins = end.diff(start, 'minute');
+function formatShortTime(date: dayjs.Dayjs): string {
+  const m = date.minute();
+  if (m === 0) return date.format('ha');
+  return date.format('h:mma');
+}
 
-  if (durationMins <= 60) {
-    return start.format('h:mma');
-  }
-  // For multi-hour events, show range
-  return `${start.format('h:mma')}-${end.format('h:mma')}`;
+interface LayoutBlock {
+  event: IEvent;
+  top: number;
+  height: number;
+  depth: number;
+  colorIndex: number;
+}
+
+function layoutEvents(events: IEvent[]): { blocks: LayoutBlock[], totalHeight: number } {
+  if (events.length === 0) return { blocks: [], totalHeight: 0 };
+
+  const sorted = [...events].sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+
+  const blocks: LayoutBlock[] = [];
+  // Track placed blocks with their absolute start/end ms and pixel positions
+  const placed: { startMs: number; endMs: number; top: number; height: number }[] = [];
+
+  sorted.forEach((event, i) => {
+    const startMs = new Date(event.startDate).getTime();
+    const endMs = new Date(event.endDate).getTime();
+    const durationHrs = Math.max((endMs - startMs) / (1000 * 60 * 60), 0.5);
+    const height = Math.max(durationHrs * PIXELS_PER_HOUR, MIN_BLOCK_HEIGHT);
+
+    // Find overlapping placed blocks (those whose time range intersects this event)
+    const overlapping = placed.filter(p => p.startMs < endMs && p.endMs > startMs);
+
+    let top: number;
+    let depth: number;
+
+    if (overlapping.length === 0) {
+      // No overlap — place after the last block with a small gap
+      if (placed.length === 0) {
+        top = 0;
+      } else {
+        const lastBottom = Math.max(...placed.map(p => p.top + p.height));
+        top = lastBottom + GAP_BETWEEN;
+      }
+      depth = 0;
+    } else {
+      // Overlapping — place at minimum OVERLAP_MIN_TOP below the latest overlapping block's top
+      const latestOverlapTop = Math.max(...overlapping.map(p => p.top));
+      top = latestOverlapTop + OVERLAP_MIN_TOP;
+      depth = overlapping.length;
+    }
+
+    blocks.push({ event, top, height, depth, colorIndex: i % BLOCK_COLORS.length });
+    placed.push({ startMs, endMs, top, height });
+  });
+
+  const totalHeight = Math.max(...blocks.map(b => b.top + b.height));
+  return { blocks, totalHeight };
 }
 
 export default class Events extends React.Component<{}, IEventsState> {
@@ -124,6 +185,41 @@ export default class Events extends React.Component<{}, IEventsState> {
     this.animationId = requestAnimationFrame(this.scrollStep);
   }
 
+  renderTimeline(events: IEvent[]) {
+    const { blocks, totalHeight } = layoutEvents(events);
+    if (blocks.length === 0) return null;
+
+    return (
+      <div className="timeline" style={{ height: totalHeight, position: 'relative' }}>
+        {blocks.map((b, i) => {
+          const left = b.depth * OVERLAP_INDENT;
+          const startTime = dayjs(b.event.startDate);
+          const endTime = dayjs(b.event.endDate);
+          const timeStr = `${formatShortTime(startTime)}\u2013${formatShortTime(endTime)}`;
+
+          return (
+            <div
+              key={b.event.id || b.event.summary + i}
+              className="timelineBlock"
+              style={{
+                position: 'absolute',
+                top: b.top,
+                left,
+                right: 0,
+                height: b.height,
+                backgroundColor: BLOCK_COLORS[b.colorIndex],
+                borderLeft: `3px solid ${BLOCK_COLORS[b.colorIndex].replace('0.25', '0.7')}`,
+              }}
+            >
+              <span className="timelineTime">{timeStr}</span>
+              <span className="timelineSummary">{b.event.summary}</span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
   render() {
     if (this.state.error) {
       return <div>Failed to fetch events, trying again shortly</div>
@@ -141,12 +237,7 @@ export default class Events extends React.Component<{}, IEventsState> {
               ))}
             </div>
           )}
-          {timed.map(item => (
-            <div key={item.id || item.summary} className='eventTile'>
-              <span className='eventTime'>{formatTimeRange(item)}</span>
-              <span className='eventSummary'>{item.summary}</span>
-            </div>
-          ))}
+          {this.renderTimeline(timed)}
         </div>
       </div>;
     }

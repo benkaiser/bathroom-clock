@@ -62,10 +62,10 @@ const bomToWeatherIconMap = {
 };
 
 // Chart dimensions
-const CHART_HEIGHT = 100;
-const CHART_PADDING_TOP = 25;
-const CHART_PADDING_BOTTOM = 25;
-const LABEL_OFFSET = 15;
+const CHART_HEIGHT = 130;
+const CHART_PADDING_TOP = 30;
+const CHART_PADDING_BOTTOM = 30;
+const LABEL_OFFSET = 18;
 
 function precipPercent(prob: string): number {
   if (!prob) return 0;
@@ -129,7 +129,7 @@ function renderChart(data: IForcast[], width: number) {
       {maxPoints.map((p, i) => (
         <g key={`max-${i}`}>
           <circle cx={p.x} cy={p.y} r="3" fill="white" />
-          <text x={p.x} y={p.y - LABEL_OFFSET} textAnchor="middle" fill="white" fontSize="13" fontWeight="bold" fontFamily="Anybody, sans-serif">
+          <text x={p.x} y={p.y - LABEL_OFFSET} textAnchor="middle" fill="white" fontSize="16" fontWeight="bold" fontFamily="Anybody, sans-serif">
             {data[i].maximum}°
           </text>
         </g>
@@ -137,7 +137,7 @@ function renderChart(data: IForcast[], width: number) {
       {minPoints.map((p, i) => (
         <g key={`min-${i}`}>
           <circle cx={p.x} cy={p.y} r="2.5" fill="rgba(255,255,255,0.4)" />
-          <text x={p.x} y={p.y + LABEL_OFFSET + 4} textAnchor="middle" fill="rgba(255,255,255,0.5)" fontSize="12" fontFamily="Anybody, sans-serif">
+          <text x={p.x} y={p.y + LABEL_OFFSET + 4} textAnchor="middle" fill="rgba(255,255,255,0.5)" fontSize="14" fontFamily="Anybody, sans-serif">
             {data[i].minimum}°
           </text>
         </g>
