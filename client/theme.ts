@@ -1,33 +1,33 @@
 // Theme system that follows the daylight cycle
-// Night (8pm-6am): black/white
-// Dawn (6am-8am): deep indigo → warm peach
-// Morning (8am-11am): light warm sky
-// Midday (11am-2pm): bright sky blue
-// Afternoon (2pm-5pm): warm golden sky
-// Evening (5pm-8pm): sunset orange → deep purple
+// Always keeps white text for legibility
+// Uses dark gradient backgrounds with subtle color undertones
+// Night (8pm-6am): pure black (no change)
+// Day periods: dark backgrounds with subtle warm/cool color hints
 
 interface ThemeColors {
-  background: string;
+  gradientTop: string;
+  gradientBottom: string;
   foreground: string;
   borderColor: string;
 }
 
-interface HSL {
-  h: number;
-  s: number;
-  l: number;
+// All backgrounds stay dark (low lightness) so white text is always readable
+// We just tint the darkness with subtle color undertones
+interface ColorStop {
+  h: number; // hue
+  s: number; // saturation (keep low for subtlety)
+  l: number; // lightness (keep low for readability)
 }
 
-function hsl(h: number, s: number, l: number): HSL {
+function col(h: number, s: number, l: number): ColorStop {
   return { h, s, l };
 }
 
-function hslToString(c: HSL): string {
+function colToString(c: ColorStop): string {
   return `hsl(${Math.round(c.h)}, ${Math.round(c.s)}%, ${Math.round(c.l)}%)`;
 }
 
-function lerpHSL(a: HSL, b: HSL, t: number): HSL {
-  // Handle hue wrapping (take shortest path around the circle)
+function lerpColor(a: ColorStop, b: ColorStop, t: number): ColorStop {
   let dh = b.h - a.h;
   if (dh > 180) dh -= 360;
   if (dh < -180) dh += 360;
@@ -39,47 +39,45 @@ function lerpHSL(a: HSL, b: HSL, t: number): HSL {
   };
 }
 
-// Define keyframes: [hour, background HSL, foreground HSL, border HSL]
 interface ThemeKeyframe {
   hour: number;
-  bg: HSL;
-  fg: HSL;
-  border: HSL;
+  top: ColorStop;    // gradient top color
+  bottom: ColorStop; // gradient bottom color
 }
 
+// All backgrounds are dark (lightness 0-12%) with subtle saturation
 const KEYFRAMES: ThemeKeyframe[] = [
-  // Night (solid black)
-  { hour: 0,  bg: hsl(0, 0, 0),     fg: hsl(0, 0, 100),   border: hsl(0, 0, 100) },
-  // Still night at 5:59
-  { hour: 5.5,bg: hsl(0, 0, 0),     fg: hsl(0, 0, 100),   border: hsl(0, 0, 100) },
-  // Dawn begins - deep indigo/blue
-  { hour: 6,  bg: hsl(240, 40, 15), fg: hsl(40, 80, 90),   border: hsl(40, 60, 80) },
-  // Dawn mid - warming up, peach sky
-  { hour: 7,  bg: hsl(25, 60, 40),  fg: hsl(0, 0, 95),     border: hsl(0, 0, 85) },
-  // Morning - light warm sky
-  { hour: 8,  bg: hsl(200, 55, 60), fg: hsl(220, 50, 12),  border: hsl(220, 40, 30) },
-  // Late morning - brighter
-  { hour: 10, bg: hsl(205, 65, 70), fg: hsl(220, 50, 12),  border: hsl(220, 40, 30) },
-  // Midday - bright sky blue
-  { hour: 12, bg: hsl(210, 70, 75), fg: hsl(220, 50, 12),  border: hsl(220, 40, 25) },
-  // Early afternoon
-  { hour: 14, bg: hsl(205, 60, 70), fg: hsl(220, 50, 12),  border: hsl(220, 40, 30) },
-  // Afternoon - warm golden
-  { hour: 16, bg: hsl(35, 65, 60),  fg: hsl(30, 60, 10),   border: hsl(30, 50, 25) },
-  // Evening - sunset orange
-  { hour: 17.5, bg: hsl(20, 70, 45), fg: hsl(0, 0, 95),    border: hsl(0, 0, 80) },
-  // Late evening - deep purple/red
-  { hour: 19, bg: hsl(280, 40, 20), fg: hsl(0, 0, 95),     border: hsl(0, 0, 75) },
-  // Transition to night
-  { hour: 20, bg: hsl(0, 0, 0),     fg: hsl(0, 0, 100),    border: hsl(0, 0, 100) },
+  // Night - pure black
+  { hour: 0,    top: col(0, 0, 0),     bottom: col(0, 0, 0) },
+  // Still pure black
+  { hour: 5.5,  top: col(0, 0, 0),     bottom: col(0, 0, 0) },
+  // Early dawn - very subtle deep blue/indigo at bottom
+  { hour: 6,    top: col(230, 15, 2),  bottom: col(250, 25, 8) },
+  // Dawn - subtle warm undertone rising from bottom
+  { hour: 7,    top: col(230, 20, 4),  bottom: col(25, 35, 12) },
+  // Morning - subtle warm blue
+  { hour: 8,    top: col(210, 25, 6),  bottom: col(200, 30, 12) },
+  // Late morning - lighter blue tint
+  { hour: 10,   top: col(210, 30, 7),  bottom: col(205, 35, 14) },
+  // Midday - subtle sky blue, brightest point of the day
+  { hour: 12,   top: col(210, 35, 8),  bottom: col(200, 40, 15) },
+  // Early afternoon - still bright
+  { hour: 14,   top: col(210, 30, 7),  bottom: col(200, 35, 14) },
+  // Afternoon - warming up, golden undertones
+  { hour: 16,   top: col(200, 20, 5),  bottom: col(35, 35, 12) },
+  // Evening - sunset warmth, orange/amber at bottom
+  { hour: 17.5, top: col(250, 20, 5),  bottom: col(15, 40, 12) },
+  // Late evening - deep purple/magenta undertones
+  { hour: 19,   top: col(270, 25, 5),  bottom: col(280, 30, 10) },
+  // Transition back to black
+  { hour: 20,   top: col(0, 0, 0),     bottom: col(0, 0, 0) },
   // Night
-  { hour: 24, bg: hsl(0, 0, 0),     fg: hsl(0, 0, 100),    border: hsl(0, 0, 100) },
+  { hour: 24,   top: col(0, 0, 0),     bottom: col(0, 0, 0) },
 ];
 
 function getThemeForTime(hour: number, minute: number): ThemeColors {
   const time = hour + minute / 60;
 
-  // Find the two keyframes to interpolate between
   let lower = KEYFRAMES[0];
   let upper = KEYFRAMES[KEYFRAMES.length - 1];
 
@@ -91,34 +89,58 @@ function getThemeForTime(hour: number, minute: number): ThemeColors {
     }
   }
 
-  // Calculate interpolation factor
   const range = upper.hour - lower.hour;
   const t = range === 0 ? 0 : (time - lower.hour) / range;
 
-  const bg = lerpHSL(lower.bg, upper.bg, t);
-  const fg = lerpHSL(lower.fg, upper.fg, t);
-  const border = lerpHSL(lower.border, upper.border, t);
+  const top = lerpColor(lower.top, upper.top, t);
+  const bottom = lerpColor(lower.bottom, upper.bottom, t);
 
   return {
-    background: hslToString(bg),
-    foreground: hslToString(fg),
-    borderColor: hslToString(border),
+    gradientTop: colToString(top),
+    gradientBottom: colToString(bottom),
+    foreground: 'white',
+    borderColor: 'rgba(255, 255, 255, 0.6)',
   };
+}
+
+function applyThemeColors(theme: ThemeColors): void {
+  const root = document.documentElement;
+  root.style.setProperty('--foreground', theme.foreground);
+  root.style.setProperty('--background', `linear-gradient(to bottom, ${theme.gradientTop}, ${theme.gradientBottom})`);
+  root.style.setProperty('--border-color', theme.borderColor);
 }
 
 export function applyTheme(): void {
   const now = new Date();
   const theme = getThemeForTime(now.getHours(), now.getMinutes());
-  const root = document.documentElement;
-
-  root.style.setProperty('--foreground', theme.foreground);
-  root.style.setProperty('--background', theme.background);
-  root.style.setProperty('--border-color', theme.borderColor);
+  applyThemeColors(theme);
 }
 
-export function startThemeUpdater(): void {
-  // Apply immediately
+/** Apply theme for a specific hour (0-24, supports decimals e.g. 7.5 = 7:30am) */
+export function previewThemeAtHour(hour: number): void {
+  // Stop the auto-updater so it doesn't override preview
+  if (themeInterval) {
+    clearInterval(themeInterval);
+    themeInterval = null;
+  }
+  const h = Math.floor(hour);
+  const m = Math.round((hour - h) * 60);
+  const theme = getThemeForTime(h, m);
+  applyThemeColors(theme);
+}
+
+let themeInterval: ReturnType<typeof setInterval> | null = null;
+
+// Expose preview function globally immediately so preview.html can use it
+(window as any).previewThemeAtHour = previewThemeAtHour;
+(window as any).resumeTheme = () => {
   applyTheme();
-  // Update every 60 seconds
-  setInterval(applyTheme, 60000);
+  if (!themeInterval) {
+    themeInterval = setInterval(applyTheme, 60000);
+  }
+};
+
+export function startThemeUpdater(): void {
+  applyTheme();
+  themeInterval = setInterval(applyTheme, 60000);
 }

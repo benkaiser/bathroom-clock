@@ -16,8 +16,7 @@ html, body, #app {
   width: 100%;
   font-family: Anybody, 'sans-serif';
   color: var(--foreground);
-  background-color: var(--background);
-  transition: background-color 60s ease, color 60s ease;
+  background: var(--background);
 }
 
 .root {
