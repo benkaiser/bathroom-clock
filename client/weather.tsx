@@ -212,6 +212,12 @@ export default class Weather extends React.Component<{}, IWeatherState> {
           icon: entry.element.forecast_icon_code
         };
       });
+      // Backfill missing minimum (today often lacks it) from the next day
+      for (let i = 0; i < forcast.length; i++) {
+        if (!forcast[i].minimum && forcast[i + 1]) {
+          forcast[i].minimum = forcast[i + 1].minimum;
+        }
+      }
       console.log(forcast);
       this.setState({
         data: forcast,
