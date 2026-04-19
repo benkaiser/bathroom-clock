@@ -221,7 +221,8 @@ try {
     offTimeout = setTimeout(turnOffMonitor, offDelay());
   }
 
-  let lastMotion: boolean = false;
+  const MOTION_THRESHOLD = 2; // require N consecutive HIGH readings before triggering motion
+  let consecutiveMotionCount = 0;
 
   if (useRaspberryPi) {
     // Raspberry Pi GPIO (synchronous)
@@ -229,10 +230,14 @@ try {
       const motion = rpio.read(MOTION_PIN);
       // uncomment to see raw pin values
       // console.log('Read value: ' + motion);
-      if (motion !== lastMotion && motion) {
-        onMotion();
+      if (motion) {
+        consecutiveMotionCount++;
+        if (consecutiveMotionCount >= MOTION_THRESHOLD) {
+          onMotion();
+        }
+      } else {
+        consecutiveMotionCount = 0;
       }
-      lastMotion = motion;
     }, 1000);
   } else {
     // Orange Pi GPIO (asynchronous)
@@ -241,10 +246,14 @@ try {
         const motion = await orangePiGpio.read();
         // uncomment to see raw pin values
         // console.log('Read value: ' + motion);
-        if (motion !== lastMotion && motion) {
-          onMotion();
+        if (motion) {
+          consecutiveMotionCount++;
+          if (consecutiveMotionCount >= MOTION_THRESHOLD) {
+            onMotion();
+          }
+        } else {
+          consecutiveMotionCount = 0;
         }
-        lastMotion = motion;
       } catch (error) {
         console.error('Error reading Orange Pi GPIO pin:', error);
       }
