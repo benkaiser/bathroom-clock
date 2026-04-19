@@ -10,11 +10,18 @@ import { startThemeUpdater } from './theme';
 class App extends React.Component {
   render() {
     return <div className="root">
-      <div className="top"><Clock /><DailyMessage /></div>
+      <div className="main">
+        <div className="left">
+          <Clock />
+          <DailyMessage />
+        </div>
+        <div className="right">
+          <div className='events'><Events /></div>
+          <div className='home-panel'><Home /></div>
+        </div>
+      </div>
       <div className="bottom">
         <div className='weather'><Weather /></div>
-        <div className='home-panel'><Home /></div>
-        <div className='events'><Events /></div>
       </div>
     </div>;
   }

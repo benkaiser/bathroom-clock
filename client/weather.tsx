@@ -6,7 +6,7 @@ interface IForcast {
   maximum: number;
   minimum: number;
   precipitation_range: number;
-  precipitation_probability: number;
+  precipitation_probability: string;
   description: string;
   icon: string;
 }
@@ -21,9 +21,9 @@ function fancyNameForDay(item: IForcast): string {
     return 'Today';
   }
   if (item.day.getDate() == new Date().getDate() + 1) {
-    return 'Tomorrow';
+    return 'Tmrw';
   }
-  return dayjs(item.day).format('dddd');
+  return dayjs(item.day).format('ddd');
 }
 
 function transposeForcastEntry(item: any): any {
@@ -61,7 +61,94 @@ const bomToWeatherIconMap = {
   19: 'wi-hurricane'
 };
 
+// Chart dimensions
+const CHART_HEIGHT = 100;
+const CHART_PADDING_TOP = 25;
+const CHART_PADDING_BOTTOM = 25;
+const LABEL_OFFSET = 15;
+
+function precipPercent(prob: string): number {
+  if (!prob) return 0;
+  const match = prob.match(/(\d+)/);
+  return match ? parseInt(match[1]) : 0;
+}
+
+function buildCurvePath(points: {x: number, y: number}[]): string {
+  if (points.length < 2) return '';
+  let d = `M ${points[0].x} ${points[0].y}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i];
+    const p1 = points[i + 1];
+    const cpx = (p0.x + p1.x) / 2;
+    d += ` C ${cpx} ${p0.y}, ${cpx} ${p1.y}, ${p1.x} ${p1.y}`;
+  }
+  return d;
+}
+
+function renderChart(data: IForcast[], width: number) {
+  const n = data.length;
+  if (n === 0) return null;
+
+  const allTemps = data.flatMap(d => [d.maximum, d.minimum]);
+  const minTemp = Math.min(...allTemps) - 2;
+  const maxTemp = Math.max(...allTemps) + 2;
+  const tempRange = maxTemp - minTemp || 1;
+
+  const usableHeight = CHART_HEIGHT - CHART_PADDING_TOP - CHART_PADDING_BOTTOM;
+  const colWidth = width / n;
+
+  function tempToY(temp: number): number {
+    return CHART_PADDING_TOP + usableHeight - ((temp - minTemp) / tempRange) * usableHeight;
+  }
+
+  const maxPoints = data.map((d, i) => ({ x: colWidth * (i + 0.5), y: tempToY(d.maximum) }));
+  const minPoints = data.map((d, i) => ({ x: colWidth * (i + 0.5), y: tempToY(d.minimum) }));
+
+  const maxPath = buildCurvePath(maxPoints);
+  const minPath = buildCurvePath(minPoints);
+
+  // Build filled area between the two curves
+  const minReversed = [...minPoints].reverse();
+  const areaPath = maxPath +
+    ` L ${minReversed[0].x} ${minReversed[0].y}` +
+    buildCurvePath(minReversed).replace('M', ' L') +
+    ` L ${maxPoints[0].x} ${maxPoints[0].y} Z`;
+
+  return (
+    <svg width={width} height={CHART_HEIGHT} className="weatherChart">
+      {/* Filled area between curves */}
+      <path d={areaPath} fill="rgba(255,255,255,0.08)" />
+
+      {/* Max temp line */}
+      <path d={maxPath} fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="2" />
+
+      {/* Min temp line */}
+      <path d={minPath} fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="1.5" strokeDasharray="4 3" />
+
+      {/* Data points and labels */}
+      {maxPoints.map((p, i) => (
+        <g key={`max-${i}`}>
+          <circle cx={p.x} cy={p.y} r="3" fill="white" />
+          <text x={p.x} y={p.y - LABEL_OFFSET} textAnchor="middle" fill="white" fontSize="13" fontWeight="bold" fontFamily="Anybody, sans-serif">
+            {data[i].maximum}°
+          </text>
+        </g>
+      ))}
+      {minPoints.map((p, i) => (
+        <g key={`min-${i}`}>
+          <circle cx={p.x} cy={p.y} r="2.5" fill="rgba(255,255,255,0.4)" />
+          <text x={p.x} y={p.y + LABEL_OFFSET + 4} textAnchor="middle" fill="rgba(255,255,255,0.5)" fontSize="12" fontFamily="Anybody, sans-serif">
+            {data[i].minimum}°
+          </text>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
 export default class Weather extends React.Component<{}, IWeatherState> {
+  private containerRef = React.createRef<HTMLDivElement>();
+
   constructor(props: {}) {
     super(props);
     this.state = {
@@ -81,15 +168,24 @@ export default class Weather extends React.Component<{}, IWeatherState> {
       return <div className='weather'>Failed to fetch weather</div>
     }
     if (this.state.data) {
-      return <div className='weather'>
-        <div className='tiles'>
+      const chartWidth = Math.max(this.state.data.length * 130, 800);
+      return <div className='weather' ref={this.containerRef}>
+        {renderChart(this.state.data, chartWidth)}
+        <div className='weatherDays' style={{ width: chartWidth }}>
           {this.state.data.map(item => {
             const dayName = fancyNameForDay(item);
-            return <div key={+item.day} className='tile'>
-              <div className='date'>{dayName}</div>
-              <i className={`wi ${bomToWeatherIconMap[item.icon]} weatherIcon`}></i>
-              <div className='temps'><span className='minimum'>{item.minimum}</span> <span className='maximum'>{item.maximum}</span></div>
-              <div className='description'>{item.description}</div>
+            const precip = precipPercent(item.precipitation_probability);
+            return <div key={+item.day} className='weatherDay'>
+              <div className='weatherDayHeader'>
+                <span className='weatherDayName'>{dayName}</span>
+                <i className={`wi ${bomToWeatherIconMap[item.icon]} weatherDayIcon`}></i>
+              </div>
+              <div className='weatherDayDesc'>{item.description}</div>
+              {precip > 0 && (
+                <div className='weatherDayPrecip'>
+                  <i className='wi wi-raindrop weatherPrecipIcon'></i> {item.precipitation_probability}
+                </div>
+              )}
             </div>;
           })}
         </div>
