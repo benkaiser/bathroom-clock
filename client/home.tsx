@@ -33,6 +33,14 @@ const CarIcon = () => (
   </svg>
 );
 
+const WavesIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{verticalAlign: 'middle', marginRight: '4px'}}>
+    <path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path>
+    <path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path>
+    <path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path>
+  </svg>
+);
+
 export default class Home extends React.Component<{}, HomeState> {
   state: HomeState = { data: null, error: false };
 
@@ -74,7 +82,7 @@ export default class Home extends React.Component<{}, HomeState> {
         {this.renderBar('Home Batt', data.battery.value, <HomeIcon />)}
         {this.renderBar('EV9 Batt', data.ev.value, <CarIcon />)}
         <div className="home-item">
-          <div className="home-label">🏊 Pool</div>
+          <div className="home-label"><WavesIcon /> Pool</div>
           <div className="home-temp">{data.pool.value}{data.pool.unit}</div>
         </div>
       </div>
