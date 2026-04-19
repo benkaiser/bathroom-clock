@@ -258,7 +258,7 @@ if (rpio || orangePiGpio) {
     offTimeout = setTimeout(turnOffMonitor, offDelay());
   }
 
-  const MOTION_THRESHOLD = 2; // require N consecutive HIGH readings before triggering motion
+  const MOTION_THRESHOLD = 1; // trigger on any motion reading
   let consecutiveMotionCount = 0;
 
   if (useRaspberryPi) {
