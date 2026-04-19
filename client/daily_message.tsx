@@ -23,7 +23,15 @@ const messages = [
   "You have the biggest heart",
   "You are blessed to be a blessing",
   "Your day is what you make it",
-  "Love is patient"
+  "Love is patient",
+  "There is nothing but success in your future - Jasmin Brown",
+  "You are MAGNIFICENT - Jasmin Brown",
+  "You miss 100% of the naps you don't take",
+  "What even is a calorie? Have a snack",
+  "Introvert battery: 3%",
+  "My social quota for the week is full",
+  "Socialising is just acting for free",
+  "Today's mood: do not disturb"
 ];
 
 function milisUntilMidnight() {
