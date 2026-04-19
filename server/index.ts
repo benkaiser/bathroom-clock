@@ -138,6 +138,44 @@ app.get('/events', async (_, res) => {
   }
 });
 
+// Home Assistant integration
+const HA_URL = process.env.HA_URL;
+const HA_TOKEN = process.env.HA_TOKEN;
+
+app.get('/home', async (_, res) => {
+  if (!HA_URL || !HA_TOKEN) {
+    return res.status(500).send('Home Assistant not configured');
+  }
+  const entities = [
+    { key: 'battery', id: 'sensor.foxess_bat_soc1', label: 'Home Battery', unit: '%' },
+    { key: 'ev', id: 'sensor.ev9_ev_battery_level', label: 'EV9 Battery', unit: '%' },
+    { key: 'pool', id: 'sensor.pool_heat_pump_temperature', label: 'Pool Temp', unit: '°C' },
+  ];
+  try {
+    const results = await Promise.all(
+      entities.map(async (entity) => {
+        const response = await fetch(`${HA_URL}/api/states/${entity.id}`, {
+          headers: { 'Authorization': `Bearer ${HA_TOKEN}` },
+          dispatcher: new Agent({ connectTimeout: 10000 }),
+        } as any);
+        const data = await response.json() as any;
+        return {
+          key: entity.key,
+          value: parseFloat(data.state),
+          label: entity.label,
+          unit: entity.unit,
+        };
+      })
+    );
+    const response: any = {};
+    results.forEach(r => { response[r.key] = { value: r.value, label: r.label, unit: r.unit }; });
+    res.json(response);
+  } catch (error) {
+    console.error('Home Assistant fetch failed:', error);
+    res.status(500).send('Home Assistant fetch failed');
+  }
+});
+
 app.listen(port, () => {
   console.log(`App running on port ${port}`)
 });
@@ -167,7 +205,6 @@ if (useRaspberryPi) {
     console.log('Using Raspberry Pi GPIO');
   } catch (e) {
     console.error('Raspberry Pi GPIO library failed:', e);
-    throw e;
   }
 } else {
   try {
@@ -176,13 +213,13 @@ if (useRaspberryPi) {
     console.log('Using Orange Pi GPIO');
   } catch (err) {
     console.error('Orange Pi GPIO library failed:', err);
-    throw err;
   }
 }
 
-try {
-  let monitorState: boolean = false;
-  function turnOffMonitor() {
+if (rpio || orangePiGpio) {
+  try {
+    let monitorState: boolean = false;
+    function turnOffMonitor() {
     if (monitorState) {
       console.log('Turning monitor off');
       exec(`${__dirname}/monitor_off.sh`, (error, stdout, stderr) => {
@@ -261,4 +298,7 @@ try {
   }
 } catch (e) {
   console.error(e);
+}
+} else {
+  console.warn('No GPIO available — motion detection disabled, monitor always on');
 }

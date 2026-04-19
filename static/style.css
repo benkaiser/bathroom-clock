@@ -106,3 +106,62 @@ html, body, #app {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* Home Assistant panel */
+.home-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.home {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  font-size: 20px;
+  min-width: 220px;
+}
+
+.home-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.home-label {
+  font-size: 18px;
+  opacity: 0.8;
+}
+
+.home-value-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bar-container {
+  flex: 1;
+  height: 18px;
+  border: 1px solid var(--border-color);
+  border-radius: 9px;
+  overflow: hidden;
+  min-width: 140px;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 8px;
+  transition: width 1s ease;
+}
+
+.home-value {
+  font-size: 22px;
+  font-weight: bold;
+  min-width: 50px;
+  text-align: right;
+}
+
+.home-temp {
+  font-size: 32px;
+  font-weight: bold;
+}

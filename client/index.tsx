@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import Clock from './clock';
 import DailyMessage from './daily_message';
 import Events from './events';
+import Home from './home';
 import Weather from './weather';
 import { startThemeUpdater } from './theme';
 
@@ -12,6 +13,7 @@ class App extends React.Component {
       <div className="top"><Clock /><DailyMessage /></div>
       <div className="bottom">
         <div className='weather'><Weather /></div>
+        <div className='home-panel'><Home /></div>
         <div className='events'><Events /></div>
       </div>
     </div>;
