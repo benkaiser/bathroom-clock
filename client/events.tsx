@@ -89,15 +89,18 @@ function layoutEvents(events: IEvent[]): { blocks: LayoutBlock[], totalHeight: n
       }
       depth = 0;
     } else {
-      // Overlapping — place at least OVERLAP_MIN_TOP below the highest overlapping block's top
-      const highestOverlapTop = Math.max(...overlapping.map(p => p.top));
-      top = highestOverlapTop + OVERLAP_MIN_TOP;
-      // Also ensure we don't land on top of a previous overlap at this same position
-      const nearbyTops = overlapping.map(p => p.top).sort((a, b) => a - b);
-      for (const nt of nearbyTops) {
-        if (Math.abs(top - nt) < OVERLAP_MIN_TOP) {
-          top = nt + OVERLAP_MIN_TOP;
-        }
+      // Overlapping — find the parent (first/lowest overlapping block)
+      const parentBlock = overlapping.reduce((a, b) => a.top < b.top ? a : b);
+      // Find all blocks visually inside the parent's bounds
+      const siblings = placed.filter(p =>
+        p.top >= parentBlock.top && p.top < parentBlock.top + parentBlock.height
+      );
+      // Place below the lowest sibling
+      if (siblings.length > 0) {
+        const lowestSiblingTop = Math.max(...siblings.map(s => s.top));
+        top = lowestSiblingTop + OVERLAP_MIN_TOP;
+      } else {
+        top = parentBlock.top + OVERLAP_MIN_TOP;
       }
       depth = overlapping.length;
     }
