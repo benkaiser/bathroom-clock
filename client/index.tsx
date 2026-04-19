@@ -4,6 +4,7 @@ import Clock from './clock';
 import DailyMessage from './daily_message';
 import Events from './events';
 import Weather from './weather';
+import { startThemeUpdater } from './theme';
 
 class App extends React.Component {
   render() {
@@ -29,3 +30,6 @@ setInterval(() => {
 
 const root = createRoot(document.getElementById('app'));
 root.render(<App />);
+
+// Start the daylight theme system
+startThemeUpdater();
