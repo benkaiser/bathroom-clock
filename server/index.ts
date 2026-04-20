@@ -280,7 +280,7 @@ if (rpio || orangePiGpio) {
     // Orange Pi GPIO (asynchronous)
     setInterval(async () => {
       try {
-        const motion = await orangePiGpio.read();
+        const motion = Number(await orangePiGpio.read());
         // uncomment to see raw pin values
         // console.log('Read value: ' + motion);
         if (motion) {
